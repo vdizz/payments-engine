@@ -1,52 +1,42 @@
 import { loadTransactions } from './file-loader/load-transactions'
 import { Client } from './accounts/client-account'
-import { Transaction, ClientGroup } from './types/client-account'
+import { Transaction } from './types/client-account'
 
 async function run(): Promise<void> {
   try {
     const transactions = await loadTransactions()
-    const clients = groupClients(transactions)
-    const resolvedClients = executeClientTransactions(clients)
+    const resolvedClients = executeClientTransactions(transactions)
     generateOutput(resolvedClients)
   } catch (error) {
     console.log('Error processing file: ', { error })
   }
 }
 
-function groupClients(transactions: Array<Transaction>): ClientGroup {
-  return transactions.reduce((clients: ClientGroup, transaction) => {
-    const client = clients[transaction.client] || []
-    client.push(transaction)
+function executeClientTransactions(transactions: Array<Transaction>): Array<Client> {
+  const clients: Array<Client> = []
 
-    clients[transaction.client] = client
-    return clients
-  }, {})
-}
+  transactions.forEach((transaction: Transaction) => {
+    const { type, client, amount, tx } = transaction
+    const foundClient = clients.find(cli => cli.id === client)
+    const clientRef = foundClient || new Client(client)
 
-function executeClientTransactions(clients: ClientGroup): Array<Client> {
-  const completedAccounts: Array<Client> = []
-  for (const clientId in clients) {
-    const client = new Client(clientId)
+    if (type === 'deposit') clientRef.deposit(tx, amount)
+    if (type === 'withdraw') clientRef.withdraw(tx, amount)
+    if (type === 'dispute') clientRef.dispute(tx)
+    if (type === 'resolve') clientRef.resolve(tx)
+    if (type === 'chargeback') clientRef.chargeback(tx)
 
-    clients[clientId].forEach((transaction: Transaction) => {
-      const { type, amount, tx } = transaction
+    if (!foundClient) clients.push(clientRef)
+  })
 
-      if (type === 'deposit') client.deposit(amount, tx)
-      if (type === 'withdraw') client.withdraw(amount, tx)
-      if (type === 'dispute') client.dispute(tx)
-      if (type === 'resolve') client.resolve(tx)
-      if (type === 'chargeback') client.chargeback(tx)
-    })
-    completedAccounts.push(client)
-  }
-
-  return completedAccounts
+  return clients
 }
 
 function generateOutput(clients: Array<Client>) {
   console.log('client,available,held,total,locked')
   clients.forEach(client => {
-    console.log(client.getClientInfo())
+    const { id, availableFunds, heldFunds, total, isLocked } = client.getClientInfo()
+    console.log(`${id},${availableFunds},${heldFunds},${total},${isLocked}`)
   })
 }
 

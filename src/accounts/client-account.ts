@@ -1,76 +1,77 @@
-import { ClientRecord } from '../types/client-account'
+import { ClientRecord, ClientInfo } from '../types/client-account'
 
 export class Client {
-  private id: string
   private availableFunds: number = 0
   private heldFunds: number = 0
   private isLocked: boolean = false
   private transactionHistory: Array<ClientRecord> = []
+  public id: number
 
-  constructor(id: string) {
+  constructor(id: number) {
     this.id = id
   }
 
-  deposit(amount: number, tx: number): void {
+  deposit(transactionId: number, amount: number): void {
     this.availableFunds += amount
-    this.transactionHistory.push({ type: 'deposit', amount, tx, disputed: false })
+    this.transactionHistory.push({ type: 'deposit', amount, transactionId, disputed: false })
   }
 
-  withdraw(amount: number, tx: number): void {
-    if (this.availableFunds >= amount) {
-      this.availableFunds -= amount
-    }
-    this.transactionHistory.push({ type: 'withdraw', amount, tx, disputed: false })
+  withdraw(transactionId: number, amount: number): void {
+    if (this.availableFunds < amount) return
+
+    this.availableFunds -= amount
+    this.transactionHistory.push({ type: 'withdraw', amount, transactionId, disputed: false })
   }
 
-  dispute(tx: number): void {
-    const transactionIndex = this.transactionHistory.findIndex(record => record.tx === tx)
-    if (transactionIndex !== -1) {
-      const { type, amount } = this.transactionHistory[transactionIndex]
-      this.transactionHistory[transactionIndex].disputed = true
-      if (type === 'deposit') this.availableFunds -= amount
-      this.heldFunds += amount
-      this.transactionHistory.push({ type: 'dispute', tx, amount })
-    }
+  dispute(transactionId: number): void {
+    const transactionIndex = this.transactionHistory.findIndex(record => record.transactionId === transactionId)
+    if (transactionIndex === -1) return
+
+    const { type, amount } = this.transactionHistory[transactionIndex]
+    if (type === 'deposit') this.availableFunds -= amount
+    this.heldFunds += amount
+    this.transactionHistory[transactionIndex].disputed = true
+    this.transactionHistory.push({ type: 'dispute', transactionId, amount })
   }
 
-  resolve(tx: number): void {
-    const disputedIndex = this.transactionHistory.findIndex(record => record.tx === tx && record.disputed)
-    if (disputedIndex !== -1) {
-      const { amount } = this.transactionHistory[disputedIndex]
-      this.transactionHistory[disputedIndex].disputed = false
-      this.availableFunds += amount
-      this.heldFunds -= amount
-      this.transactionHistory.push({ type: 'resolve', tx, amount })
-    }
+  resolve(transactionId: number): void {
+    const disputedIndex = this.transactionHistory.findIndex(
+      record => record.transactionId === transactionId && record.disputed
+    )
+    if (disputedIndex === -1) return
+
+    const { amount } = this.transactionHistory[disputedIndex]
+    this.availableFunds += amount
+    this.heldFunds -= amount
+    this.transactionHistory[disputedIndex].disputed = false
+    this.transactionHistory.push({ type: 'resolve', transactionId, amount })
   }
 
-  chargeback(tx: number): void {
-    const disputedIndex = this.transactionHistory.findIndex(record => record.tx === tx && record.disputed)
-    if (disputedIndex !== -1) {
-      const { amount } = this.transactionHistory[disputedIndex]
-      this.transactionHistory[disputedIndex].disputed = false
-      this.heldFunds -= amount
-      this.lockAccount()
-      this.transactionHistory.push({ type: 'chargeback', tx, amount })
-    }
-  }
+  chargeback(transactionId: number): void {
+    const disputedIndex = this.transactionHistory.findIndex(
+      record => record.transactionId === transactionId && record.disputed
+    )
+    if (disputedIndex === -1) return
 
-  lockAccount(): void {
+    const { amount } = this.transactionHistory[disputedIndex]
+    this.heldFunds -= amount
     this.isLocked = true
-  }
-
-  unlockAccount(): void {
-    this.isLocked = false
+    this.transactionHistory[disputedIndex].disputed = false
+    this.transactionHistory.push({ type: 'chargeback', transactionId, amount })
   }
 
   getTotalFunds(): number {
     return this.availableFunds + this.heldFunds
   }
 
-  getClientInfo(): string {
-    return `${this.id},${+this.availableFunds.toFixed(4)},${+this.heldFunds.toFixed(4)},${+this.getTotalFunds().toFixed(
-      4
-    )},${this.isLocked}`
+  getClientInfo(): ClientInfo {
+    return {
+      id: this.id,
+      availableFunds: +this.availableFunds.toFixed(4),
+      heldFunds: +this.heldFunds.toFixed(4),
+      total: +this.getTotalFunds().toFixed(4),
+      isLocked: this.isLocked,
+      transactionHistory: this.transactionHistory
+    }
   }
 }

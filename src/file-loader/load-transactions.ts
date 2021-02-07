@@ -10,19 +10,20 @@ export function loadTransactions(): Promise<Array<Transaction>> {
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
-      .on('error', error => {
-        reject(error)
-      })
       .pipe(
         csv({
           mapHeaders: ({ header }) => header.trim(),
           mapValues: ({ index, value }) => {
             if (index === 0) return value.trim().toLowerCase()
 
-            return Number(value.trim())
+            // If the transaction value does not resolve to a number, throw an error
+            return Number(value.trim()) || reject(`Invalid transaction value in column ${index + 1}`)
           }
         })
       )
+      .on('error', error => {
+        reject(error)
+      })
       .on('data', (transaction: Transaction) => {
         transactions.push(transaction)
       })

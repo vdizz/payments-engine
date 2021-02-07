@@ -7,11 +7,16 @@ export interface Transaction {
 
 export interface ClientRecord {
   type: 'deposit' | 'withdraw' | 'dispute' | 'resolve' | 'chargeback'
-  tx: number
+  transactionId: number
   amount: number
   disputed?: boolean
 }
 
-export interface ClientGroup {
-  [key: number]: Array<Transaction>
+export interface ClientInfo {
+  id: number
+  availableFunds: number
+  heldFunds: number
+  total: number
+  isLocked: boolean
+  transactionHistory: Array<ClientRecord>
 }
