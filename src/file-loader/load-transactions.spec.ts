@@ -5,7 +5,7 @@ describe('load-transactions', () => {
     try {
       loadTransactions()
     } catch (error) {
-      expect(error.message).toBe('Invalid File Uploaded')
+      expect(error.message).toBe('File Not Found')
     }
   })
 })

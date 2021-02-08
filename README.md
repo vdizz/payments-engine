@@ -2,7 +2,7 @@
 
 A simple payments system for processessing financial transactions.
 
-This program will accept a CSV file of transactions to update client accounts and output a final state of each account.
+This program will accept a CSV file of transactions to update client accounts and output their final state.
 
 Supported transaction options: `deposit`, `withdraw`, `dispute`, `resolve`, `chargeback`
 
@@ -17,7 +17,7 @@ Supported transaction options: `deposit`, `withdraw`, `dispute`, `resolve`, `cha
     npx ts-node app.ts {{your-file}}.csv
 ```
 
-- If you have `ts-node` globally installed, the command can be run without `npx`
+- If you have `ts-node` installed globally, the command can be run without `npx`
 
 ```
     ts-node app.ts {{your-file}}.csv
@@ -36,6 +36,7 @@ Supported transaction options: `deposit`, `withdraw`, `dispute`, `resolve`, `cha
 - Transactions are processed in the order which they are received by transaction ID (`tx`)
 - A dispute can result in a negative fund total (if it's run after a withdrawal for instance)
 - After a client account receives a valid chargeback, it's expected that they won't receive any follow-up transactions
+- Currently, locked accounds cannot be unlocked. Please call a customer service representative.
 
 ## Unit Tests via Jest
 

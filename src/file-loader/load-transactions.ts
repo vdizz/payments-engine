@@ -6,7 +6,7 @@ export function loadTransactions(): Promise<Array<Transaction>> {
   const transactions: Array<Transaction> = []
   const filePath: string = process.argv[2]
 
-  if (!fs.existsSync(filePath)) throw new Error('Invalid File Uploaded')
+  if (!fs.existsSync(filePath)) throw new Error('File Not Found')
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
